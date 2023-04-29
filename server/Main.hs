@@ -37,7 +37,7 @@ main = do
     compress = gzip def {gzipFiles = GzipCompress}
 
 app :: Application
-app = serve (Proxy @ API) (static :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
+app = serve (Proxy @ API) (static :<|> handleGetExercises :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
   where
     static = serveDirectoryWith (defaultWebAppSettings "static")
 
@@ -48,9 +48,17 @@ newtype Wrapper a = Wrapper a
 -- | Convert client side routes into server-side web handlers
 type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 
+data Exercise = Exercise
+  { exName :: Text
+  }
+  deriving (Generic)
+
+instance ToJSON Exercise
+
 -- | API type
 type API =
   ("static" :> Raw)
+    :<|> ("exercises" :> Get '[JSON] [Exercise])
     :<|> ServerRoutes
     :<|> ("manifest.json" :> Get '[JSON] Manifest)
     :<|> Raw
@@ -77,6 +85,8 @@ misoManifest =
       theme_color = "#00d1b2",
       description = "A tasty Haskell front-end framework"
     }
+
+handleGetExercises = pure []
 
 handle404 :: Application
 handle404 _ respond =
