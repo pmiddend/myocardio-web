@@ -1,0 +1,38 @@
+{
+  "nodes": {
+    "miso": {
+      "flake": false,
+      "locked": {
+        "narHash": "sha256-VDI//WC13JJO9vOmyxpUyQSm4XQeHPkHANV6tp4qmU0=",
+        "type": "tarball",
+        "url": "https://github.com/dmjio/miso/archive/refs/tags/1.8.3.tar.gz"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://github.com/dmjio/miso/archive/refs/tags/1.8.3.tar.gz"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1682716666,
+        "narHash": "sha256-RGKVQ6pt12VWzJ0vPTLTdsmsyTfsfL4WYgLztE2ZACg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "358a179550508bf2dafdf1657a94b7f65d91c4bf",
+        "type": "github"
+      },
+      "original": {
+        "id": "nixpkgs",
+        "type": "indirect"
+      }
+    },
+    "root": {
+      "inputs": {
+        "miso": "miso",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
