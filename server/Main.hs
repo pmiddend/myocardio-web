@@ -14,13 +14,17 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import Data.Proxy
 import Data.Text (Text)
+import Data.Time.Clock (getCurrentTime)
 import GHC.Generics
+import Lens.Micro.Platform (ix, (%~), (&), (.~), (^.))
 import qualified Lucid as L
 import Lucid.Base
-import Miso
-import Miso.String
-import Myocardio.ConfigJson (readDataFile)
-import Myocardio.ExerciseData (ExerciseData)
+import Miso hiding (send)
+import Miso.String hiding (index)
+import Myocardio.ConfigJson (readDataFile, writeDataFile)
+import Myocardio.Exercise (commit, toggleTag)
+import Myocardio.ExerciseData (ExerciseData, exercisesL)
+import Myocardio.Ranking (reorderExercises)
 import Network.HTTP.Types hiding (Header)
 import Network.Wai
 import Network.Wai.Application.Static
@@ -38,7 +42,7 @@ main = do
     compress = gzip def {gzipFiles = GzipCompress}
 
 app :: Application
-app = serve (Proxy @ API) (static :<|> handleGetExercises :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
+app = serve (Proxy @ API) (static :<|> handleGetExercises :<|> handleTagExercise :<|> handleCommit :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
   where
     static = serveDirectoryWith (defaultWebAppSettings "static")
 
@@ -53,6 +57,8 @@ type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 type API =
   ("static" :> Raw)
     :<|> ("exercises" :> Get '[JSON] ExerciseData)
+    :<|> ("exercises" :> Capture "index" Int :> Get '[JSON] ExerciseData)
+    :<|> ("exercises" :> Post '[JSON] ExerciseData)
     :<|> ServerRoutes
     :<|> ("manifest.json" :> Get '[JSON] Manifest)
     :<|> Raw
@@ -80,6 +86,22 @@ misoManifest =
       description = "A tasty Haskell front-end framework"
     }
 
+handleTagExercise :: Int -> Handler ExerciseData
+handleTagExercise index = do
+  now' <- liftIO getCurrentTime
+  exerciseData <- liftIO readDataFile
+  let newExerciseData = exerciseData & exercisesL . ix index %~ toggleTag now'
+  liftIO (writeDataFile newExerciseData)
+  pure newExerciseData
+
+handleCommit :: Handler ExerciseData
+handleCommit = do
+  exerciseData <- liftIO readDataFile
+  let newExerciseData = exerciseData & exercisesL %~ (reorderExercises . (commit <$>))
+  liftIO (writeDataFile newExerciseData)
+  pure newExerciseData
+
+handleGetExercises :: Handler ExerciseData
 handleGetExercises = do
   exercises <- liftIO readDataFile
   pure exercises

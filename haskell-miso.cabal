@@ -29,6 +29,7 @@ executable server
       Myocardio.Ranking,
       Myocardio.TrainingState,
       Myocardio.Util
+      Common
     ghc-options:
       -O2 -threaded -Wall -rtsopts
     hs-source-dirs:

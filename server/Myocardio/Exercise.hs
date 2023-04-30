@@ -29,8 +29,8 @@ import Data.Time.Clock (UTCTime)
 import GHC.Generics (Generic)
 import Lens.Micro.Platform (makeLensesFor, view, (^.))
 import Myocardio.Endo (Endo)
-import Text.Show (Show)
 import Myocardio.Muscle (Muscle)
+import Text.Show (Show)
 
 data Exercise = Exercise
   { name :: Text,
