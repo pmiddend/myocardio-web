@@ -66,6 +66,16 @@ executable client
   if !impl(ghcjs)
     buildable: False
   else
+    other-modules:
+      Myocardio.Endo,
+      Myocardio.Exercise,
+      Myocardio.ExerciseData,
+      Myocardio.FormatTime,
+      Myocardio.Muscle,
+      Myocardio.MuscleWithTrainingState,
+      Myocardio.TrainingState,
+      Myocardio.Util,
+      Common
     ghcjs-options:
       -dedupe -DGHCJS_GC_INTERVAL=5000
     hs-source-dirs:
@@ -74,7 +84,11 @@ executable client
       aeson,
       base < 5,
       containers,
+      text,
+      time,
+      ghcjs-base,
       miso,
-      servant
+      servant,
+      microlens-platform
     default-language:
       Haskell2010

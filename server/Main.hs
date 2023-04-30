@@ -16,7 +16,7 @@ import Data.Proxy
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime)
 import GHC.Generics
-import Lens.Micro.Platform (ix, (%~), (&), (.~), (^.))
+import Lens.Micro.Platform (ix, (%~), (&))
 import qualified Lucid as L
 import Lucid.Base
 import Miso hiding (send)
@@ -115,7 +115,7 @@ handle404 _ respond =
     $ renderBS
     $ toHtml
     $ Wrapper
-    $ the404 Model {uri = goHome, navMenuOpen = False}
+    $ the404 Model {uri = goHome, navMenuOpen = False, loadedExerciseData = NotAsked}
 
 instance L.ToHtml a => L.ToHtml (Wrapper a) where
   toHtmlRaw = L.toHtml
@@ -123,10 +123,10 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
     L.doctype_
     L.html_ [L.lang_ "en"] $ do
       L.head_ $ do
-        L.title_ "Miso: A tasty Haskell front-end framework"
+        L.title_ "💪 myocardio - magic for your exercise plans!"
         L.link_
           [ L.rel_ "stylesheet",
-            L.href_ "https://cdnjs.cloudflare.com/ajax/libs/github-fork-ribbon-css/0.2.2/gh-fork-ribbon.min.css"
+            L.href_ "https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
           ]
         L.link_
           [ L.rel_ "manifest",
@@ -143,18 +143,8 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
           [ L.name_ "viewport",
             L.content_ "width=device-width, initial-scale=1"
           ]
-        L.meta_
-          [ L.name_ "description",
-            L.content_ "Miso is a small isomorphic Haskell front-end framework featuring a virtual-dom, diffing / patching algorithm, event delegation, event batching, SVG, Server-sent events, Websockets, type-safe servant-style routing and an extensible Subscription-based subsystem. Inspired by Elm, Redux and Bobril. Miso is pure by default, but side effects (like XHR) can be introduced into the system via the Effect data type. Miso makes heavy use of the GHCJS FFI and therefore has minimal dependencies."
-          ]
-        L.style_ ".github-fork-ribbon:before { background-color: \"#e59751\" !important; } "
-        cssRef animateRef
-        cssRef bulmaRef
-        cssRef fontAwesomeRef
-        jsRef "https://buttons.github.io/buttons.js"
-        L.script_ analytics
         jsRef "static/all.js"
-      L.body_ (L.toHtml x)
+      L.body_ (L.toHtml x <> jsRef "https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js")
     where
       jsRef href =
         L.with
@@ -163,48 +153,13 @@ instance L.ToHtml a => L.ToHtml (Wrapper a) where
             makeAttribute "async" mempty,
             makeAttribute "defer" mempty
           ]
-      cssRef href =
-        L.with
-          (L.link_ mempty)
-          [ L.rel_ "stylesheet",
-            L.type_ "text/css",
-            L.href_ href
-          ]
-
-fontAwesomeRef :: MisoString
-fontAwesomeRef = "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-
-animateRef :: MisoString
-animateRef = "https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css"
-
-bulmaRef :: MisoString
-bulmaRef = "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.4.3/css/bulma.min.css"
-
-analytics :: MisoString
-analytics =
-  -- Multiline strings don’t work well with CPP
-  mconcat
-    [ "(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){",
-      "(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),",
-      "m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)",
-      "})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');",
-      "ga('create', 'UA-102668481-1', 'auto');",
-      "ga('send', 'pageview');"
-    ]
 
 serverHandlers ::
   Handler (Wrapper (View Action))
     :<|> Handler (Wrapper (View Action))
-    :<|> Handler (Wrapper (View Action))
-    :<|> Handler (Wrapper (View Action))
 serverHandlers =
-  examplesHandler
-    :<|> docsHandler
-    :<|> communityHandler
-    :<|> homeHandler
+  visualHandler :<|> homeHandler
   where
-    send f u = pure $ Wrapper $ f Model {uri = u, navMenuOpen = False}
+    send f u = pure $ Wrapper $ f Model {uri = u, navMenuOpen = False, loadedExerciseData = NotAsked}
     homeHandler = send home goHome
-    examplesHandler = send examples goExamples
-    docsHandler = send docs goDocs
-    communityHandler = send community goCommunity
+    visualHandler = send visual goVisual
