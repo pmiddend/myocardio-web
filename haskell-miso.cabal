@@ -18,6 +18,16 @@ executable server
   if impl(ghcjs)
     buildable: False
   else
+    other-modules:
+      Myocardio.Endo
+      Myocardio.Exercise
+      Myocardio.ExerciseData
+      Myocardio.FormatTime
+      Myocardio.Muscle
+      Myocardio.MuscleWithTrainingState
+      Myocardio.Ranking
+      Myocardio.TrainingState
+      Myocardio.Util
     ghc-options:
       -O2 -threaded -Wall -rtsopts
     hs-source-dirs:

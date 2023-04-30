@@ -8,13 +8,9 @@ module Common where
 
 import           Data.Bool
 import qualified Data.Map    as M
-import           Data.Monoid
 import           Data.Proxy
 import           Servant.API
-#if MIN_VERSION_servant(0,10,0)
-import Servant.Utils.Links
-#endif
-
+import Servant.Links
 import           Miso
 import           Miso.String
 

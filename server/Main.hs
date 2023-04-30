@@ -13,12 +13,12 @@ import Common
 import Data.Aeson
 import Data.Proxy
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Generics
 import qualified Lucid as L
 import Lucid.Base
 import Miso
 import Miso.String
+import Myocardio.ExerciseData (ExerciseData)
 import Network.HTTP.Types hiding (Header)
 import Network.Wai
 import Network.Wai.Application.Static
@@ -26,7 +26,6 @@ import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Gzip
 import Network.Wai.Middleware.RequestLogger
 import Servant
-import Servant.Server.Internal
 import qualified System.IO as IO
 
 main :: IO ()
@@ -48,17 +47,10 @@ newtype Wrapper a = Wrapper a
 -- | Convert client side routes into server-side web handlers
 type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 
-data Exercise = Exercise
-  { exName :: Text
-  }
-  deriving (Generic)
-
-instance ToJSON Exercise
-
 -- | API type
 type API =
   ("static" :> Raw)
-    :<|> ("exercises" :> Get '[JSON] [Exercise])
+    :<|> ("exercises" :> Get '[JSON] [ExerciseData])
     :<|> ServerRoutes
     :<|> ("manifest.json" :> Get '[JSON] Manifest)
     :<|> Raw
