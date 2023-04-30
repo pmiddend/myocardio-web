@@ -19,14 +19,15 @@ executable server
     buildable: False
   else
     other-modules:
-      Myocardio.Endo
-      Myocardio.Exercise
-      Myocardio.ExerciseData
-      Myocardio.FormatTime
-      Myocardio.Muscle
-      Myocardio.MuscleWithTrainingState
-      Myocardio.Ranking
-      Myocardio.TrainingState
+      Myocardio.Endo,
+      Myocardio.Exercise,
+      Myocardio.ExerciseData,
+      Myocardio.FormatTime,
+      Myocardio.ConfigJson,
+      Myocardio.Muscle,
+      Myocardio.MuscleWithTrainingState,
+      Myocardio.Ranking,
+      Myocardio.TrainingState,
       Myocardio.Util
     ghc-options:
       -O2 -threaded -Wall -rtsopts
@@ -37,6 +38,9 @@ executable server
       base < 5,
       time,
       microlens,
+      bytestring,
+      directory,
+      xdg-basedir,
       microlens-platform,
       containers,
       http-types,

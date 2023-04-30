@@ -10,6 +10,7 @@
 module Main where
 
 import Common
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import Data.Proxy
 import Data.Text (Text)
@@ -18,6 +19,7 @@ import qualified Lucid as L
 import Lucid.Base
 import Miso
 import Miso.String
+import Myocardio.ConfigJson (readDataFile)
 import Myocardio.ExerciseData (ExerciseData)
 import Network.HTTP.Types hiding (Header)
 import Network.Wai
@@ -50,7 +52,7 @@ type ServerRoutes = ToServerRoutes ClientRoutes Wrapper Action
 -- | API type
 type API =
   ("static" :> Raw)
-    :<|> ("exercises" :> Get '[JSON] [ExerciseData])
+    :<|> ("exercises" :> Get '[JSON] ExerciseData)
     :<|> ServerRoutes
     :<|> ("manifest.json" :> Get '[JSON] Manifest)
     :<|> Raw
@@ -78,7 +80,9 @@ misoManifest =
       description = "A tasty Haskell front-end framework"
     }
 
-handleGetExercises = pure []
+handleGetExercises = do
+  exercises <- liftIO readDataFile
+  pure exercises
 
 handle404 :: Application
 handle404 _ respond =
