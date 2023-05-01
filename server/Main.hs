@@ -78,12 +78,12 @@ instance ToJSON Manifest
 misoManifest :: Manifest
 misoManifest =
   Manifest
-    { name = "Haskell Miso",
-      short_name = "Miso",
+    { name = "myocardio",
+      short_name = "myocardio",
       start_url = ".",
       display = "standalone",
       theme_color = "#00d1b2",
-      description = "A tasty Haskell front-end framework"
+      description = "magic for your exercise plans"
     }
 
 handleTagExercise :: Int -> Handler ExerciseData

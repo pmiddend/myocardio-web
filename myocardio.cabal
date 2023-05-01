@@ -1,15 +1,14 @@
-name:                haskell-miso
-version:             0.1.0.1
-synopsis:            https://haskell-miso.org
-description:         Website for the Miso web framework
-homepage:            https://haskell-miso.org
-license:             BSD3
-author:              David Johnson
-maintainer:          djohnson.m@gmail.com
-copyright:           David Johnson (c) 2017-2018
+name:                myocardio
+version:             3.0.0
+synopsis:            myocardio is a small utility to generate exercise split plans for you
+description:         myocardio is a small utility to generate exercise split plans for you.
+homepage:            https://github.com/pmiddend/myocardio-web
+license:             GPL-3.0-or-later
+author:              Philipp Middendorf
+maintainer:          pmidden@mailbox.org
+copyright:           2023 Philipp Middendorf
 category:            Web
 build-type:          Simple
-extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 executable server

@@ -12,7 +12,6 @@ module Common where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.List (zipWith)
-import qualified Data.Map as M
 import Data.Maybe (isJust)
 import Data.Proxy
 import Data.Text (Text)
@@ -88,44 +87,7 @@ visual :: Model -> View Action
 visual = template v
   where
     v =
-      div_
-        [class_ "animated fadeIn"]
-        [ a_
-            [href_ "https://github.com/dmjio/miso"]
-            [ img_
-                [ width_ "100",
-                  class_ "animated bounceInDown",
-                  src_ misoSrc,
-                  alt_ "miso logo"
-                ]
-            ],
-          h1_
-            [ class_ "title animated pulse",
-              style_ $
-                M.fromList
-                  [ (pack "font-size", pack "82px"),
-                    (pack "font-weight", pack "100")
-                  ]
-            ]
-            [text "community"],
-          h2_
-            [class_ "subtitle animated pulse"]
-            [ a_
-                [ href_ "https://haskell-miso-slack.herokuapp.com/",
-                  target_ "_blank"
-                ]
-                [text "Slack"],
-              text " / ",
-              a_
-                [ href_ "https://www.irccloud.com/invite?channel=%23haskell-miso&hostname=irc.libera.chat&port=6697&ssl=1",
-                  target_ "_blank"
-                ]
-                [text "#haskell-miso"]
-            ]
-        ]
-
-misoSrc :: MisoString
-misoSrc = pack "https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1f35c.png"
+      div_ [] [h1_ [] ["TODO"]]
 
 home :: Model -> View Action
 home m = template v m
@@ -210,32 +172,7 @@ the404 :: Model -> View Action
 the404 = template v
   where
     v =
-      div_
-        []
-        [ a_
-            [href_ "https://github.com/dmjio/miso"]
-            [ img_
-                [ width_ "100",
-                  class_ "animated bounceOutUp",
-                  src_ misoSrc,
-                  alt_ "miso logo"
-                ]
-            ],
-          h1_
-            [ class_ "title",
-              style_ $
-                M.fromList
-                  [ (pack "font-size", pack "82px"),
-                    (pack "font-weight", pack "100")
-                  ]
-            ]
-            [text "404"],
-          h2_
-            [class_ "subtitle animated pulse"]
-            [ text "No soup for you! ",
-              a_ [href_ "/", onPreventClick (ChangeURI goHome)] [text " - Go Home"]
-            ]
-        ]
+      div_ [] [h1_ [] [text "404"]]
 
 -- | Links
 goHome, goVisual :: URI
