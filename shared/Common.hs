@@ -7,14 +7,17 @@
 
 module Common where
 
-import Data.Bool
+import Data.List (zipWith)
 import qualified Data.Map as M
+import Data.Maybe (isJust)
 import Data.Proxy
+import Data.Time.Clock (UTCTime)
 import Lens.Micro.Platform (to, (^.))
-import Miso
-import Miso.String
-import Myocardio.Exercise (nameL)
+import Miso hiding (now)
+import Miso.String hiding (zipWith)
+import Myocardio.Exercise (lastL, nameL, repsL, taggedL)
 import Myocardio.ExerciseData (ExerciseData, exercisesL)
+import Myocardio.FormatTime (formatTimeDiff)
 import Servant.API
 import Servant.Links
 
@@ -28,7 +31,8 @@ data RemoteData a = NotAsked | Loading | Success a deriving (Show, Eq)
 data Model = Model
   { uri :: URI,
     navMenuOpen :: Bool,
-    loadedExerciseData :: RemoteData ExerciseData
+    loadedExerciseData :: RemoteData ExerciseData,
+    now :: Maybe UTCTime
   }
   deriving (Show, Eq)
 
@@ -37,10 +41,12 @@ data Action
   = Alert
   | ChangeURI URI
   | HandleURI URI
-  | ToggleNavMenu
   | NoOp
   | FetchExercises
-  | FetchExercisesDone ExerciseData
+  | Commit
+  | NewExercisesReceived ExerciseData
+  | ToggleTagged Int
+  | FetchExercisesDone UTCTime ExerciseData
   deriving (Show, Eq)
 
 -- | Router
@@ -103,25 +109,52 @@ misoSrc = pack "https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1
 home :: Model -> View Action
 home m = template v m
   where
-    makeTableRow exs = tr_ [] [td_ [] [text (exs ^. nameL . to toMisoString)]]
+    makeTableRow idx exs =
+      tr_
+        []
+        [ td_
+            []
+            [ input_
+                [ type_ "checkbox",
+                  class_ "form-check-input",
+                  checked_ (isJust (exs ^. taggedL)),
+                  onClick (ToggleTagged idx)
+                ]
+            ],
+          td_ [] [text (exs ^. nameL . to toMisoString)],
+          td_ [] [text (exs ^. repsL . to toMisoString)],
+          td_ [] [text (toMisoString (maybe "" (maybe (const "") formatTimeDiff (now m)) (exs ^. lastL)))]
+        ]
     v =
       div_
-        [class_ "container"]
-        [ button_ [class_ "btn btn-primary", onClick FetchExercises] [text "fetch"],
+        [class_ "container mt-3"]
+        [ div_
+            [class_ "hstack gap-3"]
+            [ button_ [class_ "btn btn-outline-secondary btn-sm", onClick FetchExercises] [text "🔄 Reload"],
+              div_ [class_ "vr"] [],
+              button_ [class_ "btn btn-outline-primary btn-sm", onClick Commit] [text "✅ Commit"]
+            ],
           case loadedExerciseData m of
             NotAsked -> text "Not asked"
             Loading -> text "Loading"
             Success loadedExercises ->
               table_
                 [class_ "table"]
-                ( (tr_ [] [th_ [] [text "Name"]])
-                    : (makeTableRow <$> (loadedExercises ^. exercisesL))
+                ( ( tr_
+                      []
+                      [ th_ [] [text "Done"],
+                        th_ [] [text "Name"],
+                        th_ [] [text "Reps"],
+                        th_ [] [text "Last"]
+                      ]
+                  )
+                    : (zipWith makeTableRow [0 ..] (loadedExercises ^. exercisesL))
                 )
         ]
 
 template :: View Action -> Model -> View Action
 template content Model {..} =
-  div_ [] [hero content uri navMenuOpen]
+  div_ [] [hero content uri]
 
 the404 :: Model -> View Action
 the404 = template v
@@ -171,8 +204,8 @@ routes :: Proxy ClientRoutes
 routes = Proxy
 
 -- | Hero
-hero :: View Action -> URI -> Bool -> View Action
-hero content uri' navMenuOpen' =
+hero :: View Action -> URI -> View Action
+hero content uri' =
   div_
     []
     [ nav_
@@ -183,13 +216,13 @@ hero content uri' navMenuOpen' =
                 [class_ "nav-item"]
                 [ a_
                     [href_ "/", onPreventClick (ChangeURI goHome), class_ ("nav-link" <> if uriPath uri' == "/" || uriPath uri' == "" then " active" else "")]
-                    [text "Home"]
+                    [text "🏡 Home"]
                 ],
               li_
                 [class_ "nav-item"]
                 [ a_
                     [href_ "/visual", onPreventClick (ChangeURI goVisual), class_ ("nav-link" <> if uriPath uri' == "/visual" then " active" else "")]
-                    [text "Visualized"]
+                    [text "💪 Visualized"]
                 ]
             ]
         ],

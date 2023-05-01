@@ -5,10 +5,28 @@ module Main where
 import Common
 import Data.Aeson (eitherDecodeStrict)
 import Data.Proxy
-import JavaScript.Web.XMLHttpRequest (Method (GET), Request (Request), RequestData (NoData), contents, reqData, reqHeaders, reqLogin, reqMethod, reqURI, reqWithCredentials, xhrByteString)
-import Miso
+import Data.Time.Clock (getCurrentTime)
+import JavaScript.Web.XMLHttpRequest (Method (GET, POST), Request (Request), RequestData (NoData), contents, reqData, reqHeaders, reqLogin, reqMethod, reqURI, reqWithCredentials, xhrByteString)
+import Miso hiding (now)
 import Miso.String
 import Myocardio.ExerciseData (ExerciseData)
+
+commit :: IO ExerciseData
+commit = do
+  Just resp <- contents <$> xhrByteString req
+  case eitherDecodeStrict resp :: Either String ExerciseData of
+    Left s -> error s
+    Right j -> pure j
+  where
+    req =
+      Request
+        { reqMethod = POST,
+          reqURI = pack "/exercises",
+          reqLogin = Nothing,
+          reqHeaders = [],
+          reqWithCredentials = False,
+          reqData = NoData
+        }
 
 getRemoteExerciseData :: IO ExerciseData
 getRemoteExerciseData = do
@@ -27,10 +45,27 @@ getRemoteExerciseData = do
           reqData = NoData
         }
 
+toggleTagged :: Int -> IO ExerciseData
+toggleTagged idx = do
+  Just resp <- contents <$> xhrByteString req
+  case eitherDecodeStrict resp :: Either String ExerciseData of
+    Left s -> error s
+    Right j -> pure j
+  where
+    req =
+      Request
+        { reqMethod = GET,
+          reqURI = pack ("/exercises/" <> show idx),
+          reqLogin = Nothing,
+          reqHeaders = [],
+          reqWithCredentials = False,
+          reqData = NoData
+        }
+
 main :: IO ()
 main = miso $ \currentURI ->
   App
-    { model = Model currentURI False Loading,
+    { model = Model currentURI False Loading Nothing,
       view = viewModel,
       ..
     }
@@ -49,22 +84,28 @@ main = miso $ \currentURI ->
 updateModel :: Action -> Model -> Effect Action Model
 updateModel FetchExercises m =
   m <# do
-    FetchExercisesDone <$> getRemoteExerciseData
-updateModel (FetchExercisesDone newExs) m =
+    FetchExercisesDone <$> getCurrentTime <*> getRemoteExerciseData
+updateModel Commit m =
+  m <# do
+    NewExercisesReceived <$> commit
+updateModel (ToggleTagged idx) m =
+  m <# do
+    NewExercisesReceived <$> toggleTagged idx
+updateModel (FetchExercisesDone now newExs) m =
+  m {loadedExerciseData = Success newExs, now = Just now} <# do
+    pure NoOp
+updateModel (NewExercisesReceived newExs) m =
   m {loadedExerciseData = Success newExs} <# do
     pure NoOp
 updateModel (HandleURI u) m =
   m {uri = u} <# do
     pure NoOp
 updateModel (ChangeURI u) m =
-  m {navMenuOpen = False} <# do
+  m <# do
     pushURI u
     pure NoOp
 updateModel Alert m@Model {..} =
   m <# do
     alert $ pack (show uri)
-    pure NoOp
-updateModel ToggleNavMenu m@Model {..} =
-  m {navMenuOpen = not navMenuOpen} <# do
     pure NoOp
 updateModel NoOp m = noEff m

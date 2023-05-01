@@ -19,8 +19,7 @@ import GHC.Generics
 import Lens.Micro.Platform (ix, (%~), (&))
 import qualified Lucid as L
 import Lucid.Base
-import Miso hiding (send)
-import Miso.String hiding (index)
+import Miso hiding (now, send)
 import Myocardio.ConfigJson (readDataFile, writeDataFile)
 import Myocardio.Exercise (commit, toggleTag)
 import Myocardio.ExerciseData (ExerciseData, exercisesL)
@@ -115,7 +114,7 @@ handle404 _ respond =
     $ renderBS
     $ toHtml
     $ Wrapper
-    $ the404 Model {uri = goHome, navMenuOpen = False, loadedExerciseData = NotAsked}
+    $ the404 Model {uri = goHome, navMenuOpen = False, loadedExerciseData = NotAsked, now = Nothing}
 
 instance L.ToHtml a => L.ToHtml (Wrapper a) where
   toHtmlRaw = L.toHtml
@@ -160,6 +159,6 @@ serverHandlers ::
 serverHandlers =
   visualHandler :<|> homeHandler
   where
-    send f u = pure $ Wrapper $ f Model {uri = u, navMenuOpen = False, loadedExerciseData = NotAsked}
+    send f u = pure $ Wrapper $ f Model {uri = u, navMenuOpen = False, loadedExerciseData = NotAsked, now = Nothing}
     homeHandler = send home goHome
     visualHandler = send visual goVisual
