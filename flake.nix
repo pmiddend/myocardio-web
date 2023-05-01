@@ -22,9 +22,20 @@
     {
 
       packages.x86_64-linux.client = client;
-      packages.x86_64-linux.server = server-prod;
+      packages.x86_64-linux.server-unoptimized = server-prod;
+      packages.x86_64-linux.server = pkgs.runCommand "myocardio" { inherit client server-prod; } ''
+        mkdir -p $out/{bin,static}
+        cp ${server-prod}/bin/* $out/bin
+        ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
+          --jscomp_off=checkVars \
+          --externs=${client}/bin/client.jsexe/all.js.externs \
+          ${client}/bin/client.jsexe/all.js > temp.js
+        mv temp.js $out/static/all.js
+      '';
 
-      devShells.x86_64-linux.default = server-dev.env.overrideAttrs (old: { buildInputs = old.buildInputs ++ [ reload-script ]; });
+      devShells.x86_64-linux.default = server-dev.env.overrideAttrs (old: {
+        buildInputs = old.buildInputs ++ [ reload-script ];
+      });
 
     };
 }
