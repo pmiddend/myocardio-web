@@ -87,6 +87,8 @@ executable client
       text,
       time,
       ghcjs-base,
+      microlens,
+      bytestring,
       miso,
       servant,
       microlens-platform

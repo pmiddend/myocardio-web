@@ -16,12 +16,12 @@ import Data.Proxy
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime)
 import GHC.Generics
-import Lens.Micro.Platform (ix, (%~), (&))
+import Lens.Micro.Platform (ix, (%~), (&), (.~))
 import qualified Lucid as L
 import Lucid.Base
 import Miso hiding (now, send)
 import Myocardio.ConfigJson (readDataFile, writeDataFile)
-import Myocardio.Exercise (commit, toggleTag)
+import Myocardio.Exercise (commit, repsL, toggleTag)
 import Myocardio.ExerciseData (ExerciseData, exercisesL)
 import Myocardio.Ranking (reorderExercises)
 import Network.HTTP.Types hiding (Header)
@@ -41,7 +41,7 @@ main = do
     compress = gzip def {gzipFiles = GzipCompress}
 
 app :: Application
-app = serve (Proxy @ API) (static :<|> handleGetExercises :<|> handleTagExercise :<|> handleCommit :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
+app = serve (Proxy @ API) (static :<|> handleGetExercises :<|> handleTagExercise :<|> handleChangeRep :<|> handleCommit :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
   where
     static = serveDirectoryWith (defaultWebAppSettings "static")
 
@@ -57,7 +57,8 @@ type API =
   ("static" :> Raw)
     :<|> ("exercises" :> Get '[JSON] ExerciseData)
     :<|> ("exercises" :> Capture "index" Int :> Get '[JSON] ExerciseData)
-    :<|> ("exercises" :> Post '[JSON] ExerciseData)
+    :<|> ("exercises" :> ReqBody '[JSON] RepInfo :> Post '[JSON] ExerciseData)
+    :<|> ("exercises" :> "commit" :> Post '[JSON] ExerciseData)
     :<|> ServerRoutes
     :<|> ("manifest.json" :> Get '[JSON] Manifest)
     :<|> Raw
@@ -93,6 +94,13 @@ handleTagExercise index = do
   liftIO (writeDataFile newExerciseData)
   pure newExerciseData
 
+handleChangeRep :: RepInfo -> Handler ExerciseData
+handleChangeRep repInfo = do
+  exerciseData <- liftIO readDataFile
+  let newExerciseData = exerciseData & exercisesL . ix (repIdx repInfo) . repsL .~ repValue repInfo
+  liftIO (writeDataFile newExerciseData)
+  pure newExerciseData
+
 handleCommit :: Handler ExerciseData
 handleCommit = do
   exerciseData <- liftIO readDataFile
@@ -114,7 +122,7 @@ handle404 _ respond =
     $ renderBS
     $ toHtml
     $ Wrapper
-    $ the404 Model {uri = goHome, navMenuOpen = False, loadedExerciseData = NotAsked, now = Nothing}
+    $ the404 Model {uri = goHome, loadedExerciseData = NotAsked, now = Nothing, repEdit = Nothing}
 
 instance L.ToHtml a => L.ToHtml (Wrapper a) where
   toHtmlRaw = L.toHtml
@@ -159,6 +167,15 @@ serverHandlers ::
 serverHandlers =
   visualHandler :<|> homeHandler
   where
-    send f u = pure $ Wrapper $ f Model {uri = u, navMenuOpen = False, loadedExerciseData = NotAsked, now = Nothing}
+    send f u =
+      pure $
+        Wrapper $
+          f
+            Model
+              { uri = u,
+                loadedExerciseData = NotAsked,
+                now = Nothing,
+                repEdit = Nothing
+              }
     homeHandler = send home goHome
     visualHandler = send visual goVisual

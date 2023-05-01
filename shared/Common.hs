@@ -1,5 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -7,12 +10,15 @@
 
 module Common where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.List (zipWith)
 import qualified Data.Map as M
 import Data.Maybe (isJust)
 import Data.Proxy
+import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
-import Lens.Micro.Platform (to, (^.))
+import GHC.Generics (Generic)
+import Lens.Micro.Platform (Traversal', to, (^.))
 import Miso hiding (now)
 import Miso.String hiding (zipWith)
 import Myocardio.Exercise (lastL, nameL, repsL, taggedL)
@@ -25,14 +31,25 @@ import Servant.Links
 --
 -- model, action, view, router, links, events map
 -- decoders are all shareable
-data RemoteData a = NotAsked | Loading | Success a deriving (Show, Eq)
+data RemoteData a = NotAsked | Loading | Success a deriving (Show, Eq, Functor)
+
+_Success :: Traversal' (RemoteData a) a
+_Success f (Success a) = Success <$> f a
+_Success _ NotAsked = pure NotAsked
+_Success _ Loading = pure Loading
+
+data RepInfo = RepInfo
+  { repIdx :: Int,
+    repValue :: Text
+  }
+  deriving (Generic, FromJSON, ToJSON, Eq, Show)
 
 -- | Model
 data Model = Model
   { uri :: URI,
-    navMenuOpen :: Bool,
     loadedExerciseData :: RemoteData ExerciseData,
-    now :: Maybe UTCTime
+    now :: Maybe UTCTime,
+    repEdit :: Maybe RepInfo
   }
   deriving (Show, Eq)
 
@@ -47,6 +64,10 @@ data Action
   | NewExercisesReceived ExerciseData
   | ToggleTagged Int
   | FetchExercisesDone UTCTime ExerciseData
+  | OpenRepEdit Int
+  | ChangeEditIdx Int Text
+  | ConfirmEditIdx Int Text
+  | CancelEditIdx
   deriving (Show, Eq)
 
 -- | Router
@@ -109,6 +130,7 @@ misoSrc = pack "https://em-content.zobj.net/thumbs/240/apple/325/steaming-bowl_1
 home :: Model -> View Action
 home m = template v m
   where
+    repsLink idx exs = a_ [href_ "#", onClick (OpenRepEdit idx)] [text (exs ^. repsL . to toMisoString)]
     makeTableRow idx exs =
       tr_
         []
@@ -122,7 +144,35 @@ home m = template v m
                 ]
             ],
           td_ [] [text (exs ^. nameL . to toMisoString)],
-          td_ [] [text (exs ^. repsL . to toMisoString)],
+          td_
+            []
+            [ case repEdit m of
+                Just repEdit' ->
+                  if idx == repIdx repEdit'
+                    then
+                      div_
+                        [class_ "hstack gap-1"]
+                        [ input_
+                            [ type_ "text",
+                              value_ (toMisoString (repValue repEdit')),
+                              class_ "form-control form-control-sm",
+                              onInput (ChangeEditIdx idx . fromMisoString)
+                            ],
+                          div_ [class_ "vr"] [],
+                          button_
+                            [ class_ "btn btn-outline-success btn-sm",
+                              onClick (ConfirmEditIdx idx (repValue repEdit'))
+                            ]
+                            [text "✅"],
+                          button_
+                            [ class_ "btn btn-outline-danger btn-sm",
+                              onClick CancelEditIdx
+                            ]
+                            [text "❌"]
+                        ]
+                    else repsLink idx exs
+                _ -> repsLink idx exs
+            ],
           td_ [] [text (toMisoString (maybe "" (maybe (const "") formatTimeDiff (now m)) (exs ^. lastL)))]
         ]
     v =
