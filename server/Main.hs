@@ -31,19 +31,24 @@ import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Gzip
 import Network.Wai.Middleware.RequestLogger
 import Servant
+import System.Environment (getArgs)
 import qualified System.IO as IO
 
 main :: IO ()
 main = do
   IO.hPutStrLn IO.stderr "Running on port 3002..."
-  run 3002 $ logStdout (compress app)
+  vars <- getArgs
+  let staticDir = case vars of
+        staticDir' : _ -> staticDir'
+        _ -> "static"
+  run 3002 $ logStdout (compress (app staticDir))
   where
     compress = gzip def {gzipFiles = GzipCompress}
 
-app :: Application
-app = serve (Proxy @ API) (static :<|> handleGetExercises :<|> handleTagExercise :<|> handleChangeRep :<|> handleCommit :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
+app :: String -> Application
+app staticDir = serve (Proxy @ API) (static :<|> handleGetExercises :<|> handleTagExercise :<|> handleChangeRep :<|> handleCommit :<|> serverHandlers :<|> pure misoManifest :<|> Tagged handle404)
   where
-    static = serveDirectoryWith (defaultWebAppSettings "static")
+    static = serveDirectoryWith (defaultWebAppSettings staticDir)
 
 -- | Wrapper for setting HTML doctype and header
 newtype Wrapper a = Wrapper a

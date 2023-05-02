@@ -23,7 +23,7 @@
 
       packages.x86_64-linux.client = client;
       packages.x86_64-linux.server-unoptimized = server-prod;
-      packages.x86_64-linux.server = pkgs.runCommand "myocardio" { inherit client server-prod; } ''
+      packages.x86_64-linux.server = pkgs.runCommand "myocardio" { inherit client server-prod; buildInputs = [ pkgs.makeWrapper ]; } ''
         mkdir -p $out/{bin,static}
         cp ${server-prod}/bin/* $out/bin
         ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS \
@@ -31,6 +31,7 @@
           --externs=${client}/bin/client.jsexe/all.js.externs \
           ${client}/bin/client.jsexe/all.js > temp.js
         mv temp.js $out/static/all.js
+        wrapProgram $out/bin/server --add-flags "$out/static"
       '';
 
       devShells.x86_64-linux.default = server-dev.env.overrideAttrs (old: {
